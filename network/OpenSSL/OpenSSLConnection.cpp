@@ -157,10 +157,10 @@ namespace awsiotsdk {
 
 			int connect_status = connect(server_tcp_socket_fd_, (sockaddr *) &dest_addr, sizeof(sockaddr));
 			if(-1 != connect_status) {
-				AWS_LOG_ERROR(OPENSSL_WRAPPER_LOG_TAG, "connect - %s", strerror(errno));
 				ret_val = ResponseCode::SUCCESS;
 			}
-
+			
+			AWS_LOG_ERROR(OPENSSL_WRAPPER_LOG_TAG, "connect - %s", strerror(errno));
 			return ret_val;
 		}
 
