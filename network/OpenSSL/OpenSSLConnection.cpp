@@ -31,6 +31,7 @@
 #define getcwd _getcwd // avoid MSFT "deprecation" warning
 #else
 #include <limits>
+#include <resolv.h>
 #define MAX_PATH_LENGTH_ PATH_MAX
 #endif
 
@@ -142,6 +143,13 @@ namespace awsiotsdk {
 				return ResponseCode::NETWORK_TCP_NO_ENDPOINT_SPECIFIED;
 			}
 
+#ifndef WIN32
+			if(res_init() == -1)
+			{
+				AWS_LOG_ERROR(OPENSSL_WRAPPER_LOG_TAG, "DNS initialize error");
+			}
+#endif
+
 			hostent *host = gethostbyname(endpoint_char);
 			if(nullptr == host) {
 				return ResponseCode::NETWORK_TCP_NO_ENDPOINT_SPECIFIED;
@@ -162,7 +170,11 @@ namespace awsiotsdk {
 			}
 			else
 			{
+#ifdef WIN32
+				closesocket(server_tcp_socket_fd_);
+#else
 				close(server_tcp_socket_fd_);
+#endif
 				AWS_LOG_ERROR(OPENSSL_WRAPPER_LOG_TAG, "connect - %s", strerror(errno));
 				return ResponseCode::NETWORK_TCP_CONNECT_ERROR;
 			}
