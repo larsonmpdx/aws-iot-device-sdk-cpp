@@ -154,7 +154,7 @@ namespace awsiotsdk {
 			dest_addr.sin_addr.s_addr = *(uint32_t *)(host->h_addr);
 			memset(&(dest_addr.sin_zero), '\0', 8);
 
-			AWS_LOG_DEBUG(OPENSSL_WRAPPER_LOG_TAG, "resolved %s to %s", endpoint_.c_str(), inet_ntoa(dest_addr.sin_addr));
+			AWS_LOG_INFO(OPENSSL_WRAPPER_LOG_TAG, "resolved %s to %s", endpoint_.c_str(), inet_ntoa(dest_addr.sin_addr));
 
 			int connect_status = connect(server_tcp_socket_fd_, (sockaddr *) &dest_addr, sizeof(sockaddr));
 			if(-1 != connect_status) {
