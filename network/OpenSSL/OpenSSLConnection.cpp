@@ -147,7 +147,6 @@ namespace awsiotsdk {
 				return ResponseCode::NETWORK_TCP_NO_ENDPOINT_SPECIFIED;
 			}
 
-			ResponseCode ret_val = ResponseCode::NETWORK_TCP_CONNECT_ERROR;
 			sockaddr_in dest_addr;
 
 			dest_addr.sin_family = AF_INET;
@@ -157,11 +156,14 @@ namespace awsiotsdk {
 
 			int connect_status = connect(server_tcp_socket_fd_, (sockaddr *) &dest_addr, sizeof(sockaddr));
 			if(-1 != connect_status) {
-				ret_val = ResponseCode::SUCCESS;
+				return ResponseCode::SUCCESS;
 			}
-			
-			AWS_LOG_ERROR(OPENSSL_WRAPPER_LOG_TAG, "connect - %s", strerror(errno));
-			return ret_val;
+			else
+			{
+				close(server_tcp_socket_fd_);
+				AWS_LOG_ERROR(OPENSSL_WRAPPER_LOG_TAG, "connect - %s", strerror(errno));
+				return ResponseCode::NETWORK_TCP_CONNECT_ERROR;
+			}
 		}
 
 		ResponseCode OpenSSLConnection::SetSocketToNonBlocking() {
