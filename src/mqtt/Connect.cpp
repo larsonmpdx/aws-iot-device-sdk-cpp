@@ -366,7 +366,10 @@ namespace awsiotsdk {
 						}
 
 						std::shared_ptr<mqtt::SubscribePacket> p_subscribe_packet = mqtt::SubscribePacket::Create(topic_vector);
-						rc = WriteToNetworkBuffer(p_network_connection, p_subscribe_packet->ToString());
+						if(p_subscribe_packet != nullptr)
+						{
+							rc = WriteToNetworkBuffer(p_network_connection, p_subscribe_packet->ToString());
+						}
 
 						p_client_state_->SetAutoReconnectRequired(false);
 						continue;
