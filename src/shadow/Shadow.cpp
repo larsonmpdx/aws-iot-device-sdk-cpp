@@ -234,6 +234,20 @@ namespace awsiotsdk {
                     if (!own_request) {
                         AWS_LOG_DEBUG(SHADOW_LOG_TAG, "Delta received for shadow : %s", thing_name_.c_str());
                         rc = ResponseCode::SHADOW_RECEIVED_DELTA;
+
+                        if (!cur_server_state_document_.HasMember(SHADOW_DOCUMENT_STATE_KEY)) {
+                            util::JsonParser::InitializeFromJsonString(cur_server_state_document_,
+                                                                       SHADOW_DOCUMENT_EMPTY_STRING);
+                        }
+                        
+                        if (!cur_server_state_document_[SHADOW_DOCUMENT_STATE_KEY].HasMember(SHADOW_DOCUMENT_DESIRED_KEY)) {
+                            util::JsonDocument empty_doc;
+                            util::JsonParser::InitializeFromJsonString(empty_doc, SHADOW_DOCUMENT_EMPTY_STRING);
+                            util::JsonParser::MergeValues(cur_server_state_document_[SHADOW_DOCUMENT_STATE_KEY],
+                                                          empty_doc[SHADOW_DOCUMENT_STATE_KEY],
+                                                          cur_server_state_document_.GetAllocator());
+                        }
+
                         util::JsonParser::MergeValues(cur_server_state_document_[SHADOW_DOCUMENT_STATE_KEY][SHADOW_DOCUMENT_DESIRED_KEY],
                                                       payload[SHADOW_DOCUMENT_STATE_KEY],
                                                       cur_server_state_document_.GetAllocator());
