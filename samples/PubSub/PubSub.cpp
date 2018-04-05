@@ -48,7 +48,6 @@ namespace awsiotsdk {
                       << "******************************Entering Publish with no queuing delay unless queue is full!!**************************"
                       << std::endl;
             ResponseCode rc;
-            uint16_t packet_id = 0;
             int itr = 1;
 
             util::String p_topic_name_str = SDK_SAMPLE_TOPIC;
@@ -59,12 +58,12 @@ namespace awsiotsdk {
                 std::cout << "Publish Payload : " << payload << std::endl;
 
                 std::unique_ptr<Utf8String> p_topic_name = Utf8String::Create(p_topic_name_str);
-                rc = p_iot_client_->PublishAsync(std::move(p_topic_name), false, false, mqtt::QoS::QOS1,
-                                                 payload, nullptr, packet_id);
+                rc = p_iot_client_->Publish(std::move(p_topic_name), false, false, mqtt::QoS::QOS1,
+                                                 payload, std::chrono::seconds(10));
                 if (ResponseCode::SUCCESS == rc) {
                     cur_pending_messages_++;
                     total_published_messages_++;
-                    std::cout << "Publish Packet Id : " << packet_id << std::endl;
+                    std::cout << "Publish success" << std::endl;
                 } else if (ResponseCode::ACTION_QUEUE_FULL == rc) {
                     itr--;
                     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -238,9 +237,43 @@ namespace awsiotsdk {
             }
 
             util::String client_id_tagged = ConfigCommon::base_client_id_;
-            client_id_tagged.append("_pub_sub_tester_");
-            client_id_tagged.append(std::to_string(rand()));
             std::unique_ptr<Utf8String> client_id = Utf8String::Create(client_id_tagged);
+
+            p_iot_client_->SetAutoReconnectEnabled(false);
+
+            while(true) {
+                std::cout << "connecting with client ID " << client_id_tagged << std::endl;
+                rc = p_iot_client_->Connect(ConfigCommon::mqtt_command_timeout_, ConfigCommon::is_clean_session_,
+                                            mqtt::Version::MQTT_3_1_1, ConfigCommon::keep_alive_timeout_secs_,
+                                            std::move(client_id), nullptr, nullptr, nullptr);
+                if (ResponseCode::MQTT_CONNACK_CONNECTION_ACCEPTED != rc) {
+                    AWS_LOG_ERROR(LOG_TAG_PUBSUB, "connect failed. %s",
+                                  ResponseHelper::ToString(rc).c_str());
+                    std::cout << "sleeping before reconnect" << std::endl;
+                    std::this_thread::sleep_for(std::chrono::seconds(10));
+                    continue;
+                }
+                while(true)
+                {
+                    // Test with delay between each action being queued up
+                    rc = RunPublish(MESSAGE_COUNT);
+                    if (ResponseCode::SUCCESS != rc) {
+                        std::cout << std::endl << "Publish runner failed. " << ResponseHelper::ToString(rc)
+                                  << std::endl;
+                        AWS_LOG_ERROR(LOG_TAG_PUBSUB, "Publish runner failed. %s",
+                                      ResponseHelper::ToString(rc).c_str());
+                        std::cout << "sleeping before reconnect" << std::endl;
+                        std::this_thread::sleep_for(std::chrono::seconds(10));
+                        break;
+                    } else {
+                        std::cout << "sleeping before re-send" << std::endl;
+                        std::this_thread::sleep_for(std::chrono::seconds(10));
+                    }
+                }
+            }
+
+
+
 
             rc = p_iot_client_->Connect(ConfigCommon::mqtt_command_timeout_, ConfigCommon::is_clean_session_,
                                         mqtt::Version::MQTT_3_1_1, ConfigCommon::keep_alive_timeout_secs_,
